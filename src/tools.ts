@@ -8,7 +8,6 @@ import {
   FilterSchema,
   CcEventSchema,
   PitchBendEventSchema,
-  EventSchema,
   CreateMidiSchema,
   InsertEventsSchema,
 } from "./tool-schemas.js";

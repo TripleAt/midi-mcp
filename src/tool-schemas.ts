@@ -16,17 +16,7 @@ export const FilterSchema = z
   })
   .optional();
 
-export const NoteEventBaseSchema = z.object({
-  type: z.literal("note"),
-  midi: z.number().int().min(0).max(127).optional(),
-  noteNumber: z.number().int().min(0).max(127).optional(),
-  ticks: z.number().int().min(0),
-  durationTicks: z.number().int().min(1).optional(),
-  duration: z.number().int().min(1).optional(),
-  velocity: z.number().min(0).max(1).optional(),
-});
-
-export const NoteEventSchema = NoteEventBaseSchema.superRefine((val, ctx) => {
+const refineNoteEvent = (val: { midi?: number; noteNumber?: number; durationTicks?: number; duration?: number }, ctx: z.RefinementCtx) => {
   if (val.midi === undefined && val.noteNumber === undefined) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -55,6 +45,16 @@ export const NoteEventSchema = NoteEventBaseSchema.superRefine((val, ctx) => {
       path: ["duration"],
     });
   }
+};
+
+export const NoteEventBaseSchema = z.object({
+  type: z.literal("note"),
+  midi: z.number().int().min(0).max(127).optional(),
+  noteNumber: z.number().int().min(0).max(127).optional(),
+  ticks: z.number().int().min(0),
+  durationTicks: z.number().int().min(1).optional(),
+  duration: z.number().int().min(1).optional(),
+  velocity: z.number().min(0).max(1).optional(),
 });
 
 export const CcEventSchema = z.object({
@@ -70,42 +70,15 @@ export const PitchBendEventSchema = z.object({
   ticks: z.number().int().min(0),
 });
 
-export const EventSchema = z.discriminatedUnion("type", [
-  NoteEventBaseSchema,
-  CcEventSchema,
-  PitchBendEventSchema,
-]);
+export const EventSchema = z
+  .discriminatedUnion("type", [NoteEventBaseSchema, CcEventSchema, PitchBendEventSchema])
+  .superRefine((val, ctx) => {
+    if (val.type === "note") refineNoteEvent(val, ctx);
+  });
 
-export const NoteEventShortcutSchema = NoteEventBaseSchema.omit({ type: true }).superRefine((val, ctx) => {
-  if (val.midi === undefined && val.noteNumber === undefined) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "note event requires midi or noteNumber",
-      path: ["midi"],
-    });
-  }
-  if (val.midi !== undefined && val.noteNumber !== undefined) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "note event requires only one of midi or noteNumber",
-      path: ["noteNumber"],
-    });
-  }
-  if (val.durationTicks === undefined && val.duration === undefined) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "note event requires durationTicks or duration",
-      path: ["durationTicks"],
-    });
-  }
-  if (val.durationTicks !== undefined && val.duration !== undefined) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "note event requires only one of durationTicks or duration",
-      path: ["duration"],
-    });
-  }
-});
+export const NoteEventShortcutSchema = NoteEventBaseSchema
+  .omit({ type: true })
+  .superRefine(refineNoteEvent);
 export const CcEventShortcutSchema = CcEventSchema.omit({ type: true });
 export const PitchBendEventShortcutSchema = PitchBendEventSchema.omit({
   type: true,
