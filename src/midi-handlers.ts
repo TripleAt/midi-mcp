@@ -299,7 +299,6 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       trackId,
       range,
       filter,
-      all,
       offset,
       limit,
     }: {
@@ -307,19 +306,11 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       trackId: number;
       range?: any;
       filter?: any;
-      all?: boolean;
       offset?: number;
       limit?: number;
     }) => {
       const entry = getEntry(midiId);
       const events = toEventList(getTrack, entry.midi, trackId, range, filter);
-      if (all) {
-        return serialize({
-          total: events.length,
-          nextOffset: null,
-          events,
-        });
-      }
       const start = offset ?? 0;
       const pageSize = limit ?? 512;
       const end = start + pageSize;
@@ -327,6 +318,26 @@ export const createMidiHandlers = (repo: MidiRepository) => {
         total: events.length,
         nextOffset: end < events.length ? end : null,
         events: events.slice(start, end),
+      });
+    },
+
+    getAllEvents: async ({
+      midiId,
+      trackId,
+      range,
+      filter,
+    }: {
+      midiId: string;
+      trackId: number;
+      range?: any;
+      filter?: any;
+    }) => {
+      const entry = getEntry(midiId);
+      const events = toEventList(getTrack, entry.midi, trackId, range, filter);
+      return serialize({
+        total: events.length,
+        nextOffset: null,
+        events,
       });
     },
 
@@ -364,12 +375,38 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       return ok("ok");
     },
 
+    insertNotes: async ({
+      midiId,
+      trackId,
+      notes,
+    }: {
+      midiId: string;
+      trackId: number;
+      notes: any[];
+    }) => {
+      const entry = getEntry(midiId);
+      const track = getTrack(entry.midi, trackId);
+      for (const note of notes) {
+        addEventToTrack(track, { type: "note", ...note });
+      }
+      markDirty(entry);
+      return ok("ok");
+    },
+
     removeEvents: async ({ midiId, trackId, range, filter }: { midiId: string; trackId: number; range?: any; filter?: any }) => {
       const entry = getEntry(midiId);
       const track = getTrack(entry.midi, trackId);
       filterNotes(track, range, filter);
       filterCc(track, range, filter);
       filterPitchBends(track, range, filter);
+      markDirty(entry);
+      return ok("ok");
+    },
+
+    removeNotes: async ({ midiId, trackId, range, filter }: { midiId: string; trackId: number; range?: any; filter?: any }) => {
+      const entry = getEntry(midiId);
+      const track = getTrack(entry.midi, trackId);
+      filterNotes(track, range, filter);
       markDirty(entry);
       return ok("ok");
     },

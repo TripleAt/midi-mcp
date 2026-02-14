@@ -10,6 +10,7 @@ import {
   PitchBendEventSchema,
   CreateMidiSchema,
   InsertEventsSchema,
+  NoteEventShortcutSchema,
 } from "./tool-schemas.js";
 
 export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
@@ -191,14 +192,12 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "get_events",
     {
       title: "Get events",
-      description:
-        "Get events with range/filter/paging. If all=true, returns all matching events and ignores offset/limit.",
+      description: "Get events with range/filter/paging.",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
         range: RangeSchema,
         filter: FilterSchema,
-        all: z.boolean().optional(),
         offset: z.number().int().min(0).optional(),
         limit: z.number().int().min(1).max(5000).optional(),
       }),
@@ -207,20 +206,77 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
   );
 
   server.registerTool(
+    "get_all_events",
+    {
+      title: "Get all events",
+      description: "Get all matching events (no paging).",
+      inputSchema: z.object({
+        midiId: z.string(),
+        trackId: z.number().int().min(0),
+        range: RangeSchema,
+        filter: FilterSchema,
+      }),
+    },
+    withErrorHandling(handlers.getAllEvents)
+  );
+
+  server.registerTool(
     "insert_events",
     {
       title: "Insert events",
-      description: "Insert events into track",
+      description: "Insert mixed events into track (advanced).",
       inputSchema: InsertEventsSchema,
     },
     withErrorHandling(handlers.insertEvents)
   );
 
   server.registerTool(
+    "insert_notes",
+    {
+      title: "Insert notes",
+      description: "Insert note events into track.",
+      inputSchema: z.object({
+        midiId: z.string(),
+        trackId: z.number().int().min(0),
+        notes: z.array(NoteEventShortcutSchema),
+      }),
+    },
+    withErrorHandling(handlers.insertNotes)
+  );
+
+  server.registerTool(
+    "insert_cc",
+    {
+      title: "Insert CC",
+      description: "Insert control changes",
+      inputSchema: z.object({
+        midiId: z.string(),
+        trackId: z.number().int().min(0),
+        events: z.array(CcEventSchema),
+      }),
+    },
+    withErrorHandling(handlers.insertCc)
+  );
+
+  server.registerTool(
+    "insert_pitchbend",
+    {
+      title: "Insert pitch bend",
+      description: "Insert pitch bends",
+      inputSchema: z.object({
+        midiId: z.string(),
+        trackId: z.number().int().min(0),
+        events: z.array(PitchBendEventSchema),
+      }),
+    },
+    withErrorHandling(handlers.insertPitchbend)
+  );
+
+  server.registerTool(
     "remove_events",
     {
       title: "Remove events",
-      description: "Remove events matching range/filter",
+      description: "Remove events (notes/cc/pitchbend) matching range/filter.",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -229,6 +285,21 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
       }),
     },
     withErrorHandling(handlers.removeEvents)
+  );
+
+  server.registerTool(
+    "remove_notes",
+    {
+      title: "Remove notes",
+      description: "Remove notes matching range/filter.",
+      inputSchema: z.object({
+        midiId: z.string(),
+        trackId: z.number().int().min(0),
+        range: RangeSchema,
+        filter: FilterSchema,
+      }),
+    },
+    withErrorHandling(handlers.removeNotes)
   );
 
   server.registerTool(
@@ -366,20 +437,6 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
   );
 
   server.registerTool(
-    "insert_cc",
-    {
-      title: "Insert CC",
-      description: "Insert control changes",
-      inputSchema: z.object({
-        midiId: z.string(),
-        trackId: z.number().int().min(0),
-        events: z.array(CcEventSchema),
-      }),
-    },
-    withErrorHandling(handlers.insertCc)
-  );
-
-  server.registerTool(
     "remove_cc",
     {
       title: "Remove CC",
@@ -392,20 +449,6 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
       }),
     },
     withErrorHandling(handlers.removeCc)
-  );
-
-  server.registerTool(
-    "insert_pitchbend",
-    {
-      title: "Insert pitch bend",
-      description: "Insert pitch bends",
-      inputSchema: z.object({
-        midiId: z.string(),
-        trackId: z.number().int().min(0),
-        events: z.array(PitchBendEventSchema),
-      }),
-    },
-    withErrorHandling(handlers.insertPitchbend)
   );
 
   server.registerTool(
@@ -519,7 +562,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "create_midi",
     {
       title: "Create MIDI",
-      description: "Create a MIDI file from composition",
+      description:
+        "Create a MIDI file from composition data. Provide either composition (inline object) or composition_file (path), not both.",
       inputSchema: CreateMidiSchema,
     },
     withErrorHandling(handlers.createMidi)
