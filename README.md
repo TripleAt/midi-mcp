@@ -1,5 +1,7 @@
 # MIDI MCP Server
 
+jp: https://github.com/TripleAt/midi-mcp/blob/master/README_JP.md
+
 MIDI file utilities exposed as an MCP (Model Context Protocol) server over stdio.
 
 ## What it does
@@ -124,5 +126,7 @@ Small examples:
 
 ## Samples
 - MP3 exported from Studio One: [orchestral_jingle_10s.mp3](sample/orchestral_jingle_10s.mp3)
-  <audio controls src="sample/orchestral_jingle_10s.mp3"></audio>
 - Generated prompt: 「オーケストラのジングル10秒」
+
+<audio controls src="sample/orchestral_jingle_10s.mp3"></audio>
+
