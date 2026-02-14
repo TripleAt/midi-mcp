@@ -147,7 +147,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     {
       title: "Get tracks",
       description:
-        "Get track list. Signature: ({midiId}) -> [{trackId, name, channel, instrument, noteCount}]",
+        "Get track list. Signature: ({midiId}) -> [{trackId, name, channel, instrument, instrumentName, noteCount}]",
       inputSchema: z.object({ midiId: z.string() }),
     },
     withErrorHandling(handlers.getTracks)

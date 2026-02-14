@@ -16,6 +16,8 @@ import {
   getPitchBendChannel,
   getControlChanges,
   normalizeCcValue,
+  defaultTimeSignatures,
+  getGmInstrumentName,
   gridToTicks,
   bbtToTicks,
   ticksToBbt,
@@ -225,7 +227,10 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       return serialize({
         ppq: header.ppq,
         tempos: header.tempos,
-        timeSignatures: header.timeSignatures,
+        timeSignatures:
+          header.timeSignatures.length > 0
+            ? header.timeSignatures
+            : defaultTimeSignatures(),
       });
     },
 
@@ -259,6 +264,7 @@ export const createMidiHandlers = (repo: MidiRepository) => {
         name: t.name,
         channel: t.channel,
         instrument: t.instrument ? t.instrument.number : undefined,
+        instrumentName: getGmInstrumentName(t.instrument ? t.instrument.number : undefined),
         noteCount: t.notes.length,
       }));
       return serialize(tracks);
@@ -612,6 +618,9 @@ export const createMidiHandlers = (repo: MidiRepository) => {
           (a, b) => a.ticks - b.ticks
         );
       }
+      if (entry.midi.header.timeSignatures.length === 0) {
+        entry.midi.header.timeSignatures = defaultTimeSignatures();
+      }
       safeUpdateHeader(entry.midi);
       markDirty(entry);
       return ok("ok");
@@ -671,6 +680,9 @@ export const createMidiHandlers = (repo: MidiRepository) => {
           ticks: ts.ticks,
           timeSignature: [ts.numerator, ts.denominator],
         }));
+      }
+      if (!data.timeSignatures || data.timeSignatures.length === 0) {
+        midi.header.timeSignatures = defaultTimeSignatures();
       }
       if (!data.tracks || data.tracks.length === 0) {
         safeUpdateHeader(midi);
