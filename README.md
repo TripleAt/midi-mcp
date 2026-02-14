@@ -56,19 +56,19 @@ insert_notes({
 ```
 
 Rules:
-- `notes` または `notes_file` のどちらか必須（両方指定も可）
-- `midi` と `noteNumber` はどちらか一方のみ
-- `ticks` か `time` のどちらか必須
-- `durationTicks` / `duration` / `durationSeconds` のいずれか必須
+- Provide either `notes` or `notes_file` (both allowed)
+- Use either `midi` or `noteNumber` (not both)
+- Provide either `ticks` or `time`
+- Provide one of `durationTicks`, `duration`, or `durationSeconds`
 
 Notes on time fields:
-- `ticks` / `durationTicks` を推奨（明確・安全）
-- `time` / `durationSeconds` は秒指定として処理
-- `duration` は `time` がある場合や小数の場合は秒として解釈
+- Prefer `ticks` / `durationTicks` (clear and safe)
+- `time` / `durationSeconds` are interpreted as seconds
+- `duration` is interpreted as seconds when `time` is present or when it's a float
 
 Large payloads:
-- 大量ノートは `notes_file` を推奨（MCPのメッセージサイズ制限回避）
-- `notes_file` はプロジェクトルートからの相対パス
+- For large note sets, prefer `notes_file` (avoid MCP message size limits)
+- `notes_file` is a path relative to the project root
 
 Small examples:
 ```json
@@ -117,13 +117,12 @@ Small examples:
 - The server exposes tools such as `open_midi`, `get_tracks`, `quantize`, and more.
 
 ## License and usage notes
-- このリポジトリにはライセンスファイルは同梱していません（明示的な許諾がないため、実質的に All rights reserved 相当の扱いになります）。
-- もし公開・紹介する場合は、作者へのリンクを貼っていただけると嬉しいです: `https://x.com/OrotiYamatano`
-- 依存ライブラリにはそれぞれのライセンスが適用されます。配布・公開時は各ライブラリのライセンス条項を確認してください。
-- MIDIファイルや音源、楽曲の権利は別途管理されます。第三者のコンテンツを扱う場合は、権利と利用許諾に注意してください。
+- This repository does not include a license file (without explicit permission, it should be treated as effectively All rights reserved).
+- If you publish or share this, please include a link to the author: `https://x.com/OrotiYamatano`
+- Each dependency is governed by its own license; check those terms when redistributing or publishing.
+- Rights to MIDI files, audio sources, and musical works are managed separately. Be mindful of rights and permissions when using third‑party content.
 
 ## Samples
-- Studio Oneで書き出したMP3: [orchestral_jingle_10s.mp3](sample/orchestral_jingle_10s.mp3)
-- 再生:
+- MP3 exported from Studio One: [orchestral_jingle_10s.mp3](sample/orchestral_jingle_10s.mp3)
   <audio controls src="sample/orchestral_jingle_10s.mp3"></audio>
-- 生成プロンプト: 「オーケストラのジングル10秒」
+- Generated prompt: 「オーケストラのジングル10秒」
