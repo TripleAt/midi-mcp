@@ -135,7 +135,13 @@ export const bbtToTicks = (
     }
   }
 
-  return currentTicks;
+  const last = timeSigs[timeSigs.length - 1];
+  const [num, denom] = last.timeSignature;
+  const ticksPerBeat = Math.round((ppq * 4) / denom);
+  const ticksPerBar = ticksPerBeat * num;
+  const barsToAdvance = Math.max(0, bbt.bar - bar);
+  const baseTicks = currentTicks + barsToAdvance * ticksPerBar;
+  return baseTicks + (bbt.beat - 1) * ticksPerBeat + bbt.tick;
 };
 
 export const ticksToBbt = (midi: Midi, ticks: number) => {

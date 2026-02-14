@@ -609,6 +609,7 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       }
       safeUpdateHeader(midi);
       const absOut = resolveProjectPath(projectId, outputPath);
+      await fs.mkdir(path.dirname(absOut), { recursive: true });
       await fs.writeFile(absOut, Buffer.from(midi.toArray()));
       return serialize({ filePath: absOut });
     },

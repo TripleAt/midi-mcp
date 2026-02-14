@@ -12,6 +12,4 @@ const repo = new MidiRepository();
 registerMidiTools(server, repo);
 
 const transport = new StdioServerTransport();
-console.log("midi-file-mcp server starting on stdio...");
 await server.connect(transport);
-console.log("midi-file-mcp server connected and ready.");
