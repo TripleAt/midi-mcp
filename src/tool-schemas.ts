@@ -60,7 +60,11 @@ export const NoteEventBaseSchema = z.object({
 export const CcEventSchema = z.object({
   type: z.literal("cc"),
   number: z.number().int().min(0).max(127),
-  value: z.number().min(0).max(1),
+  // Accept 0..1 (normalized) or integer 0..127 (MIDI range).
+  value: z.union([
+    z.number().min(0).max(1),
+    z.number().int().min(0).max(127),
+  ]),
   ticks: z.number().int().min(0),
 });
 

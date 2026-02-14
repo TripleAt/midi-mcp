@@ -191,12 +191,14 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "get_events",
     {
       title: "Get events",
-      description: "Get events with range/filter/paging",
+      description:
+        "Get events with range/filter/paging. If all=true, returns all matching events and ignores offset/limit.",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
         range: RangeSchema,
         filter: FilterSchema,
+        all: z.boolean().optional(),
         offset: z.number().int().min(0).optional(),
         limit: z.number().int().min(1).max(5000).optional(),
       }),

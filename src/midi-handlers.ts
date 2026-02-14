@@ -15,6 +15,7 @@ import {
   getCcChannel,
   getPitchBendChannel,
   getControlChanges,
+  normalizeCcValue,
   gridToTicks,
   bbtToTicks,
   ticksToBbt,
@@ -45,7 +46,7 @@ const addEventToTrack = (track: any, ev: any) => {
   if (ev.type === "cc") {
     track.addCC({
       number: ev.number,
-      value: ev.value,
+      value: normalizeCcValue(ev.value),
       ticks: ev.ticks,
     });
     return;
@@ -293,9 +294,32 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       return ok("ok");
     },
 
-    getEvents: async ({ midiId, trackId, range, filter, offset, limit }: { midiId: string; trackId: number; range?: any; filter?: any; offset?: number; limit?: number }) => {
+    getEvents: async ({
+      midiId,
+      trackId,
+      range,
+      filter,
+      all,
+      offset,
+      limit,
+    }: {
+      midiId: string;
+      trackId: number;
+      range?: any;
+      filter?: any;
+      all?: boolean;
+      offset?: number;
+      limit?: number;
+    }) => {
       const entry = getEntry(midiId);
       const events = toEventList(getTrack, entry.midi, trackId, range, filter);
+      if (all) {
+        return serialize({
+          total: events.length,
+          nextOffset: null,
+          events,
+        });
+      }
       const start = offset ?? 0;
       const pageSize = limit ?? 512;
       const end = start + pageSize;
@@ -500,7 +524,7 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       for (const ev of events) {
         track.addCC({
           number: ev.number,
-          value: ev.value,
+          value: normalizeCcValue(ev.value),
           ticks: ev.ticks,
         });
       }

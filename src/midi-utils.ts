@@ -92,6 +92,11 @@ export const getPitchBendChannel = (pb: any, track: any) =>
 export const getControlChanges = (track: any) =>
   track.controlChanges as Record<string, any[]>;
 
+export const normalizeCcValue = (value: number) => {
+  if (value <= 1) return value;
+  return Math.min(1, Math.max(0, value / 127));
+};
+
 export const gridToTicks = (grid: string | number, ppq: number) => {
   if (typeof grid === "number") return grid;
   const match = grid.match(/^1\/(\d+)$/);
