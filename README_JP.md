@@ -123,6 +123,7 @@ Small examples:
 - MIDI ファイルや音源、楽曲の権利は別途管理されます。第三者のコンテンツを扱う場合は、権利と利用許諾に注意してください。
 
 ## Samples
-- Studio Oneで書き出したMP3: [orchestral_jingle_10s.mp3](sample/orchestral_jingle_10s.mp3)
-  <audio controls src="sample/orchestral_jingle_10s.mp3"></audio>
+- Studio Oneで書き出したWAV: [orchestral_jingle_10s.wav](sample/orchestral_jingle_10s.wav)
 - 生成プロンプト: 「オーケストラのジングル10秒」
+
+<audio controls src="sample/orchestral_jingle_10s.wav"></audio>

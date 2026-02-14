@@ -125,8 +125,8 @@ Small examples:
 - Rights to MIDI files, audio sources, and musical works are managed separately. Be mindful of rights and permissions when using third‑party content.
 
 ## Samples
-- MP3 exported from Studio One: [orchestral_jingle_10s.mp3](sample/orchestral_jingle_10s.mp3)
+- WAV exported from Studio One: [orchestral_jingle_10s.wav](sample/orchestral_jingle_10s.wav)
 - Generated prompt: 「オーケストラのジングル10秒」
 
-<audio controls src="sample/orchestral_jingle_10s.mp3"></audio>
+<audio controls src="sample/orchestral_jingle_10s.wav"></audio>
 
