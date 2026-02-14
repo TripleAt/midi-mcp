@@ -74,6 +74,36 @@ export const PitchBendEventSchema = z.object({
   ticks: z.number().int().min(0),
 });
 
+export const ControllerEventSchema = z.union([
+  CcEventSchema,
+  PitchBendEventSchema,
+]);
+
+export const TempoChangeSchema = z.object({
+  ticks: z.number().int().min(0),
+  bpm: z.number().min(1),
+});
+
+export const TimeSignatureChangeSchema = z.object({
+  ticks: z.number().int().min(0),
+  numerator: z.number().int().min(1),
+  denominator: z.number().int().min(1),
+});
+
+export const TimelineChangeSchema = z.union([
+  z.object({
+    type: z.literal("tempo"),
+    ticks: z.number().int().min(0),
+    bpm: z.number().min(1),
+  }),
+  z.object({
+    type: z.literal("time_signature"),
+    ticks: z.number().int().min(0),
+    numerator: z.number().int().min(1),
+    denominator: z.number().int().min(1),
+  }),
+]);
+
 export const EventSchema = z
   .discriminatedUnion("type", [NoteEventBaseSchema, CcEventSchema, PitchBendEventSchema])
   .superRefine((val, ctx) => {
@@ -114,22 +144,8 @@ export const CreateMidiSchema = z.object({
   composition: z
     .object({
       ppq: z.number().int().min(1).optional(),
-      tempos: z
-        .array(
-          z.object({ ticks: z.number().int().min(0), bpm: z.number().min(1) })
-        )
-        .optional(),
-      timeSignatures: z
-        .array(
-          z.object({
-            ticks: z.number().int().min(0),
-            timeSignature: z.tuple([
-              z.number().int().min(1),
-              z.number().int().min(1),
-            ]),
-          })
-        )
-        .optional(),
+      tempos: z.array(TempoChangeSchema).optional(),
+      timeSignatures: z.array(TimeSignatureChangeSchema).optional(),
       tracks: z
         .array(
           z.object({

@@ -11,6 +11,8 @@ import {
   CreateMidiSchema,
   InsertEventsSchema,
   NoteEventShortcutSchema,
+  TimelineChangeSchema,
+  ControllerEventSchema,
 } from "./tool-schemas.js";
 
 export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
@@ -20,7 +22,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "list_projects",
     {
       title: "List projects",
-      description: "List available projects",
+      description: "List available projects. Signature: () -> [{id, path}]",
       inputSchema: z.object({}),
     },
     withErrorHandling(handlers.listProjects)
@@ -30,7 +32,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "open_midi",
     {
       title: "Open MIDI file",
-      description: "Open MIDI by relative path",
+      description: "Open MIDI by relative path. Signature: ({projectId, relativePath}) -> {midiId, path}",
       inputSchema: z.object({ projectId: z.string(), relativePath: z.string() }),
     },
     withErrorHandling(handlers.openMidi)
@@ -40,7 +42,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "close_midi",
     {
       title: "Close MIDI file",
-      description: "Close MIDI by midiId",
+      description: "Close MIDI by midiId. Signature: ({midiId}) -> ok",
       inputSchema: z.object({ midiId: z.string() }),
     },
     withErrorHandling(handlers.closeMidi)
@@ -50,7 +52,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "save_as",
     {
       title: "Save MIDI to new path",
-      description: "Save MIDI to a relative path",
+      description:
+        "Save MIDI to a relative path. Signature: ({midiId, projectId?, relativePath}) -> {midiId, path}",
       inputSchema: z.object({
         midiId: z.string(),
         projectId: z.string().optional(),
@@ -64,7 +67,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "commit",
     {
       title: "Commit",
-      description: "Save MIDI back to its original path",
+      description: "Save MIDI back to its original path. Signature: ({midiId}) -> ok|noop",
       inputSchema: z.object({ midiId: z.string() }),
     },
     withErrorHandling(handlers.commit)
@@ -74,7 +77,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "backup",
     {
       title: "Backup MIDI",
-      description: "Create backup and return backupId",
+      description: "Create backup and return backupId. Signature: ({midiId}) -> {backupId}",
       inputSchema: z.object({ midiId: z.string() }),
     },
     withErrorHandling(handlers.backup)
@@ -84,7 +87,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "restore",
     {
       title: "Restore MIDI from backup",
-      description: "Restore MIDI and return midiId",
+      description: "Restore MIDI and return midiId. Signature: ({backupId}) -> {midiId}",
       inputSchema: z.object({ backupId: z.string() }),
     },
     withErrorHandling(handlers.restore)
@@ -94,7 +97,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "revert",
     {
       title: "Revert",
-      description: "Revert MIDI to the last backup",
+      description: "Revert MIDI to the last backup. Signature: ({midiId}) -> ok",
       inputSchema: z.object({ midiId: z.string() }),
     },
     withErrorHandling(handlers.revert)
@@ -104,7 +107,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "get_timeline",
     {
       title: "Get timeline",
-      description: "Get ppq, tempos, and time signatures",
+      description:
+        "Get ppq, tempos, and time signatures. Signature: ({midiId}) -> {ppq, tempos, timeSignatures}",
       inputSchema: z.object({ midiId: z.string() }),
     },
     withErrorHandling(handlers.getTimeline)
@@ -114,7 +118,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "to_ticks",
     {
       title: "Convert time to ticks",
-      description: "Convert bbt/beats/seconds to ticks",
+      description:
+        "Convert bbt/beats/seconds to ticks. Signature: ({midiId, bbt?|quarterNotes?|seconds?}) -> {ticks}",
       inputSchema: z.object({
         midiId: z.string(),
         bbt: z
@@ -131,7 +136,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "to_bbt",
     {
       title: "Convert ticks to BBT",
-      description: "Convert ticks to bar/beat/tick",
+      description: "Convert ticks to bar/beat/tick. Signature: ({midiId, ticks}) -> {bar, beat, tick}",
       inputSchema: z.object({ midiId: z.string(), ticks: z.number().int().min(0) }),
     },
     withErrorHandling(handlers.toBbt)
@@ -141,7 +146,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "get_tracks",
     {
       title: "Get tracks",
-      description: "Get track list",
+      description:
+        "Get track list. Signature: ({midiId}) -> [{trackId, name, channel, instrument, noteCount}]",
       inputSchema: z.object({ midiId: z.string() }),
     },
     withErrorHandling(handlers.getTracks)
@@ -151,7 +157,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "add_track",
     {
       title: "Add track",
-      description: "Add a track and return its id",
+      description:
+        "Add a track and return its id. Signature: ({midiId, name?, channel?, instrument?}) -> {trackId}",
       inputSchema: z.object({
         midiId: z.string(),
         name: z.string().optional(),
@@ -166,7 +173,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "remove_track",
     {
       title: "Remove track",
-      description: "Remove track by id",
+      description: "Remove track by id. Signature: ({midiId, trackId}) -> ok",
       inputSchema: z.object({ midiId: z.string(), trackId: z.number().int().min(0) }),
     },
     withErrorHandling(handlers.removeTrack)
@@ -176,7 +183,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "set_track_props",
     {
       title: "Set track properties",
-      description: "Update track name/channel/instrument",
+      description:
+        "Update track name/channel/instrument. Signature: ({midiId, trackId, name?, channel?, instrument?}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -192,7 +200,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "get_events",
     {
       title: "Get events",
-      description: "Get events with range/filter/paging.",
+      description:
+        "Get events with range/filter/paging. Signature: ({midiId, trackId, range?, filter?, offset?, limit?}) -> {total, nextOffset, events}",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -209,7 +218,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "get_all_events",
     {
       title: "Get all events",
-      description: "Get all matching events (no paging).",
+      description:
+        "Get all matching events (no paging). Signature: ({midiId, trackId, range?, filter?}) -> {total, nextOffset:null, events}",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -224,7 +234,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "insert_events",
     {
       title: "Insert events",
-      description: "Insert mixed events into track (advanced).",
+      description:
+        "Insert mixed events into track (advanced). Signature: ({midiId, trackId, events?|notes?|cc?|pitchbends?}) -> ok",
       inputSchema: InsertEventsSchema,
     },
     withErrorHandling(handlers.insertEvents)
@@ -234,7 +245,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "insert_notes",
     {
       title: "Insert notes",
-      description: "Insert note events into track.",
+      description: "Insert note events into track. Signature: ({midiId, trackId, notes}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -245,38 +256,26 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
   );
 
   server.registerTool(
-    "insert_cc",
+    "insert_controllers",
     {
-      title: "Insert CC",
-      description: "Insert control changes",
+      title: "Insert controllers",
+      description:
+        "Insert CC and pitch bend events into track. Signature: ({midiId, trackId, events:[cc|pitchbend]}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
-        events: z.array(CcEventSchema),
+        events: z.array(ControllerEventSchema),
       }),
     },
-    withErrorHandling(handlers.insertCc)
-  );
-
-  server.registerTool(
-    "insert_pitchbend",
-    {
-      title: "Insert pitch bend",
-      description: "Insert pitch bends",
-      inputSchema: z.object({
-        midiId: z.string(),
-        trackId: z.number().int().min(0),
-        events: z.array(PitchBendEventSchema),
-      }),
-    },
-    withErrorHandling(handlers.insertPitchbend)
+    withErrorHandling(handlers.insertControllers)
   );
 
   server.registerTool(
     "remove_events",
     {
       title: "Remove events",
-      description: "Remove events (notes/cc/pitchbend) matching range/filter.",
+      description:
+        "Remove events (notes/cc/pitchbend) matching range/filter. Signature: ({midiId, trackId, range?, filter?}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -291,7 +290,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "remove_notes",
     {
       title: "Remove notes",
-      description: "Remove notes matching range/filter.",
+      description:
+        "Remove notes matching range/filter. Signature: ({midiId, trackId, range?, filter?}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -306,7 +306,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "copy_events",
     {
       title: "Copy events",
-      description: "Copy events between tracks",
+      description:
+        "Copy events between tracks. Signature: ({midiId, srcTrackId, dstTrackId, range?, filter?, deltaTicks}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         srcTrackId: z.number().int().min(0),
@@ -323,7 +324,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "quantize",
     {
       title: "Quantize",
-      description: "Quantize note timing",
+      description:
+        "Quantize note timing. Signature: ({midiId, trackId, range?, filter?, grid, strength?, swing?}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -341,7 +343,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "humanize",
     {
       title: "Humanize",
-      description: "Humanize note timing/velocity",
+      description:
+        "Humanize note timing/velocity. Signature: ({midiId, trackId, range?, filter?, timingMs?, velocity?}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -358,7 +361,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "transpose",
     {
       title: "Transpose",
-      description: "Transpose notes by semitones",
+      description:
+        "Transpose notes by semitones. Signature: ({midiId, trackId, range?, filter?, semitones}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -374,7 +378,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "constrain_to_scale",
     {
       title: "Constrain to scale",
-      description: "Constrain notes to a scale",
+      description:
+        "Constrain notes to a scale. Signature: ({midiId, trackId, range?, filter?, key, scale, strategy?}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -392,7 +397,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "fix_overlaps",
     {
       title: "Fix overlaps",
-      description: "Fix overlapping notes",
+      description:
+        "Fix overlapping notes. Signature: ({midiId, trackId, range?, filter?, mode?}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -408,7 +414,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "legato",
     {
       title: "Legato",
-      description: "Make notes legato",
+      description:
+        "Make notes legato. Signature: ({midiId, trackId, range?, filter?, gapTicks?}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -424,7 +431,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "trim_notes",
     {
       title: "Trim notes",
-      description: "Remove notes shorter than minDuration",
+      description:
+        "Remove notes shorter than minDuration. Signature: ({midiId, trackId, range?, filter?, minDuration?}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -437,10 +445,11 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
   );
 
   server.registerTool(
-    "remove_cc",
+    "remove_controllers",
     {
-      title: "Remove CC",
-      description: "Remove control changes",
+      title: "Remove controllers",
+      description:
+        "Remove CC and pitch bend events matching range/filter. Signature: ({midiId, trackId, range?, filter?}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
@@ -448,84 +457,28 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
         filter: FilterSchema,
       }),
     },
-    withErrorHandling(handlers.removeCc)
+    withErrorHandling(handlers.removeControllers)
   );
 
   server.registerTool(
-    "remove_pitchbend",
+    "set_timeline",
     {
-      title: "Remove pitch bend",
-      description: "Remove pitch bends",
+      title: "Set timeline",
+      description:
+        "Set tempo and/or time signatures in one call. Signature: ({midiId, changes:[{type:'tempo',ticks,bpm}|{type:'time_signature',ticks,numerator,denominator}]}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
-        trackId: z.number().int().min(0),
-        range: RangeSchema,
+        changes: z.array(TimelineChangeSchema),
       }),
     },
-    withErrorHandling(handlers.removePitchbend)
-  );
-
-  server.registerTool(
-    "get_tempo_map",
-    {
-      title: "Get tempo map",
-      description: "Get tempo changes",
-      inputSchema: z.object({ midiId: z.string() }),
-    },
-    withErrorHandling(handlers.getTempoMap)
-  );
-
-  server.registerTool(
-    "set_tempo_map",
-    {
-      title: "Set tempo map",
-      description: "Set tempo changes",
-      inputSchema: z.object({
-        midiId: z.string(),
-        changes: z.array(
-          z.object({
-            ticks: z.number().int().min(0),
-            bpm: z.number().min(1),
-          })
-        ),
-      }),
-    },
-    withErrorHandling(handlers.setTempoMap)
-  );
-
-  server.registerTool(
-    "get_time_signatures",
-    {
-      title: "Get time signatures",
-      description: "Get time signature changes",
-      inputSchema: z.object({ midiId: z.string() }),
-    },
-    withErrorHandling(handlers.getTimeSignatures)
-  );
-
-  server.registerTool(
-    "set_time_signatures",
-    {
-      title: "Set time signatures",
-      description: "Set time signature changes",
-      inputSchema: z.object({
-        midiId: z.string(),
-        changes: z.array(
-          z.object({
-            ticks: z.number().int().min(0),
-            timeSignature: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
-          })
-        ),
-      }),
-    },
-    withErrorHandling(handlers.setTimeSignatures)
+    withErrorHandling(handlers.setTimeline)
   );
 
   server.registerTool(
     "validate",
     {
       title: "Validate MIDI",
-      description: "Validate MIDI for common issues",
+      description: "Validate MIDI for common issues. Signature: ({midiId, ruleset?}) -> issues[]",
       inputSchema: z.object({ midiId: z.string(), ruleset: z.string().optional() }),
     },
     withErrorHandling(handlers.validate)
@@ -535,7 +488,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "diff",
     {
       title: "Diff MIDI",
-      description: "Diff two MIDI ids",
+      description:
+        "Diff two MIDI ids. Signature: ({midiIdA, midiIdB, range?}) -> {tracksA, tracksB, notesA, notesB}",
       inputSchema: z.object({
         midiIdA: z.string(),
         midiIdB: z.string(),
@@ -549,7 +503,8 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "export_report",
     {
       title: "Export report",
-      description: "Export validation report",
+      description:
+        "Export validation report. Signature: ({midiId, format}) -> {filePath}",
       inputSchema: z.object({
         midiId: z.string(),
         format: z.enum(["json", "txt"]),
@@ -563,7 +518,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     {
       title: "Create MIDI",
       description:
-        "Create a MIDI file from composition data. Provide either composition (inline object) or composition_file (path), not both.",
+        "Create a MIDI file from composition data. Signature: ({projectId?, composition?|composition_file?, outputPath}) -> {filePath}. composition.timeSignatures use {ticks,numerator,denominator}.",
       inputSchema: CreateMidiSchema,
     },
     withErrorHandling(handlers.createMidi)

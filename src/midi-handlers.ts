@@ -26,6 +26,8 @@ import {
   filterCc,
   filterPitchBends,
 } from "./midi-utils.js";
+import type { TimelineChangeSchema } from "./tool-schemas.js";
+import type { z } from "zod";
 
 const { Midi: MidiCtor } = midiPkg as unknown as {
   Midi: typeof import("@tonejs/midi").Midi;
@@ -393,6 +395,24 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       return ok("ok");
     },
 
+    insertControllers: async ({
+      midiId,
+      trackId,
+      events,
+    }: {
+      midiId: string;
+      trackId: number;
+      events: Array<{ type: "cc" | "pitchbend" }>;
+    }) => {
+      const entry = getEntry(midiId);
+      const track = getTrack(entry.midi, trackId);
+      for (const ev of events) {
+        addEventToTrack(track, ev);
+      }
+      markDirty(entry);
+      return ok("ok");
+    },
+
     removeEvents: async ({ midiId, trackId, range, filter }: { midiId: string; trackId: number; range?: any; filter?: any }) => {
       const entry = getEntry(midiId);
       const track = getTrack(entry.midi, trackId);
@@ -555,70 +575,43 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       return ok("ok");
     },
 
-    insertCc: async ({ midiId, trackId, events }: { midiId: string; trackId: number; events: any[] }) => {
-      const entry = getEntry(midiId);
-      const track = getTrack(entry.midi, trackId);
-      for (const ev of events) {
-        track.addCC({
-          number: ev.number,
-          value: normalizeCcValue(ev.value),
-          ticks: ev.ticks,
-        });
-      }
-      markDirty(entry);
-      return ok("ok");
-    },
-
-    removeCc: async ({ midiId, trackId, range, filter }: { midiId: string; trackId: number; range?: any; filter?: any }) => {
+    removeControllers: async ({ midiId, trackId, range, filter }: { midiId: string; trackId: number; range?: any; filter?: any }) => {
       const entry = getEntry(midiId);
       const track = getTrack(entry.midi, trackId);
       filterCc(track, range, filter);
+      filterPitchBends(track, range, filter);
       markDirty(entry);
       return ok("ok");
     },
 
-    insertPitchbend: async ({ midiId, trackId, events }: { midiId: string; trackId: number; events: any[] }) => {
+    setTimeline: async ({
+      midiId,
+      changes,
+    }: {
+      midiId: string;
+      changes: Array<z.infer<typeof TimelineChangeSchema>>;
+    }) => {
       const entry = getEntry(midiId);
-      const track = getTrack(entry.midi, trackId);
-      for (const ev of events) {
-        track.addPitchBend({
-          value: ev.value,
-          ticks: ev.ticks,
-        });
+      const tempos: Array<{ ticks: number; bpm: number }> = [];
+      const timeSignatures: Array<{ ticks: number; timeSignature: [number, number] }> = [];
+      for (const change of changes) {
+        if (change.type === "tempo") {
+          tempos.push({ ticks: change.ticks, bpm: change.bpm });
+        } else {
+          timeSignatures.push({
+            ticks: change.ticks,
+            timeSignature: [change.numerator, change.denominator],
+          });
+        }
       }
-      markDirty(entry);
-      return ok("ok");
-    },
-
-    removePitchbend: async ({ midiId, trackId, range }: { midiId: string; trackId: number; range?: any }) => {
-      const entry = getEntry(midiId);
-      const track = getTrack(entry.midi, trackId);
-      filterPitchBends(track, range, undefined);
-      markDirty(entry);
-      return ok("ok");
-    },
-
-    getTempoMap: async ({ midiId }: { midiId: string }) => {
-      const entry = getEntry(midiId);
-      return serialize(entry.midi.header.tempos);
-    },
-
-    setTempoMap: async ({ midiId, changes }: { midiId: string; changes: Array<{ ticks: number; bpm: number }> }) => {
-      const entry = getEntry(midiId);
-      entry.midi.header.tempos = [...changes].sort((a, b) => a.ticks - b.ticks);
-      safeUpdateHeader(entry.midi);
-      markDirty(entry);
-      return ok("ok");
-    },
-
-    getTimeSignatures: async ({ midiId }: { midiId: string }) => {
-      const entry = getEntry(midiId);
-      return serialize(entry.midi.header.timeSignatures);
-    },
-
-    setTimeSignatures: async ({ midiId, changes }: { midiId: string; changes: Array<{ ticks: number; timeSignature: [number, number] }> }) => {
-      const entry = getEntry(midiId);
-      entry.midi.header.timeSignatures = [...changes].sort((a, b) => a.ticks - b.ticks);
+      if (tempos.length > 0) {
+        entry.midi.header.tempos = tempos.sort((a, b) => a.ticks - b.ticks);
+      }
+      if (timeSignatures.length > 0) {
+        entry.midi.header.timeSignatures = timeSignatures.sort(
+          (a, b) => a.ticks - b.ticks
+        );
+      }
       safeUpdateHeader(entry.midi);
       markDirty(entry);
       return ok("ok");
@@ -673,7 +666,12 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       const midi = new MidiCtor();
       if (data.ppq) (midi.header as any).ppq = data.ppq;
       if (data.tempos) midi.header.tempos = data.tempos;
-      if (data.timeSignatures) midi.header.timeSignatures = data.timeSignatures;
+      if (data.timeSignatures) {
+        midi.header.timeSignatures = data.timeSignatures.map((ts: any) => ({
+          ticks: ts.ticks,
+          timeSignature: [ts.numerator, ts.denominator],
+        }));
+      }
       if (!data.tracks || data.tracks.length === 0) {
         safeUpdateHeader(midi);
         const absOut = resolveProjectPath(projectId, outputPath);
