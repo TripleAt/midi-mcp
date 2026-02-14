@@ -121,3 +121,9 @@ Small examples:
 - もし公開・紹介する場合は、作者へのリンクを貼っていただけると嬉しいです: `https://x.com/OrotiYamatano`
 - 依存ライブラリにはそれぞれのライセンスが適用されます。配布・公開時は各ライブラリのライセンス条項を確認してください。
 - MIDIファイルや音源、楽曲の権利は別途管理されます。第三者のコンテンツを扱う場合は、権利と利用許諾に注意してください。
+
+## Samples
+- Studio Oneで書き出したMP3: [orchestral_jingle_10s.mp3](sample/orchestral_jingle_10s.mp3)
+- 再生:
+  <audio controls src="sample/orchestral_jingle_10s.mp3"></audio>
+- 生成プロンプト: 「オーケストラのジングル10秒」
