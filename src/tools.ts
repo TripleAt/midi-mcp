@@ -10,6 +10,7 @@ import {
   PitchBendEventSchema,
   EventSchema,
   CreateMidiSchema,
+  InsertEventsSchema,
 } from "./tool-schemas.js";
 
 export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
@@ -209,11 +210,7 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     {
       title: "Insert events",
       description: "Insert events into track",
-      inputSchema: z.object({
-        midiId: z.string(),
-        trackId: z.number().int().min(0),
-        events: z.array(EventSchema),
-      }),
+      inputSchema: InsertEventsSchema,
     },
     withErrorHandling(handlers.insertEvents)
   );

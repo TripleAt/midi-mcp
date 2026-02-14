@@ -18,10 +18,27 @@ export const FilterSchema = z
 
 export const NoteEventSchema = z.object({
   type: z.literal("note"),
-  midi: z.number().int().min(0).max(127),
+  midi: z.number().int().min(0).max(127).optional(),
+  noteNumber: z.number().int().min(0).max(127).optional(),
   ticks: z.number().int().min(0),
-  durationTicks: z.number().int().min(1),
+  durationTicks: z.number().int().min(1).optional(),
+  duration: z.number().int().min(1).optional(),
   velocity: z.number().min(0).max(1).optional(),
+}).superRefine((val, ctx) => {
+  if (val.midi === undefined && val.noteNumber === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "note event requires midi or noteNumber",
+      path: ["midi"],
+    });
+  }
+  if (val.durationTicks === undefined && val.duration === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "note event requires durationTicks or duration",
+      path: ["durationTicks"],
+    });
+  }
 });
 
 export const CcEventSchema = z.object({
@@ -42,6 +59,33 @@ export const EventSchema = z.discriminatedUnion("type", [
   CcEventSchema,
   PitchBendEventSchema,
 ]);
+
+export const NoteEventShortcutSchema = NoteEventSchema.omit({ type: true });
+export const CcEventShortcutSchema = CcEventSchema.omit({ type: true });
+export const PitchBendEventShortcutSchema = PitchBendEventSchema.omit({
+  type: true,
+});
+
+export const InsertEventsSchema = z
+  .object({
+    midiId: z.string(),
+    trackId: z.number().int().min(0),
+    events: z.array(EventSchema).optional(),
+    notes: z.array(NoteEventShortcutSchema).optional(),
+    cc: z.array(CcEventShortcutSchema).optional(),
+    pitchbends: z.array(PitchBendEventShortcutSchema).optional(),
+  })
+  .refine(
+    (data) =>
+      (data.events && data.events.length > 0) ||
+      (data.notes && data.notes.length > 0) ||
+      (data.cc && data.cc.length > 0) ||
+      (data.pitchbends && data.pitchbends.length > 0),
+    {
+      message:
+        "insert_events requires at least one of: events, notes, cc, pitchbends",
+    }
+  );
 
 export const CreateMidiSchema = z.object({
   projectId: z.string().default("default"),

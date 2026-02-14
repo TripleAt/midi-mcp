@@ -32,3 +32,32 @@ node dist/index.js
 ## Notes
 - Paths are resolved relative to the registered project root.
 - The server exposes tools such as `open_midi`, `get_tracks`, `quantize`, and more.
+
+## insert_events
+Signature (TypeScript-ish):
+```ts
+insert_events({
+  midiId: string,
+  trackId: number,
+  events?: Array<
+    | { type: "note", midi?: number, noteNumber?: number, ticks: number, durationTicks?: number, duration?: number, velocity?: number }
+    | { type: "cc", number: number, value: number, ticks: number }
+    | { type: "pitchbend", value: number, ticks: number }
+  >,
+  notes?: Array<{ midi?: number, noteNumber?: number, ticks: number, durationTicks?: number, duration?: number, velocity?: number }>,
+  cc?: Array<{ number: number, value: number, ticks: number }>,
+  pitchbends?: Array<{ value: number, ticks: number }>,
+})
+```
+
+Rules:
+- Provide at least one of: `events`, `notes`, `cc`, `pitchbends`
+- You can mix `events` with the shortcut arrays; they are merged
+
+Small examples:
+```json
+{"midiId":"midi_123","trackId":0,"events":[{"type":"note","noteNumber":60,"ticks":0,"duration":240}]}
+```
+```json
+{"midiId":"midi_123","trackId":0,"notes":[{"midi":60,"ticks":0,"durationTicks":240}],"cc":[{"number":64,"value":1,"ticks":0}]}
+```

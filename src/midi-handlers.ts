@@ -32,10 +32,12 @@ const { Midi: MidiCtor } = midiPkg as unknown as {
 
 const addEventToTrack = (track: any, ev: any) => {
   if (ev.type === "note") {
+    const midi = ev.midi ?? ev.noteNumber;
+    const durationTicks = ev.durationTicks ?? ev.duration;
     track.addNote({
-      midi: ev.midi,
+      midi,
       ticks: ev.ticks,
-      durationTicks: ev.durationTicks,
+      durationTicks,
       velocity: ev.velocity ?? 0.8,
     });
     return;
@@ -304,10 +306,34 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       });
     },
 
-    insertEvents: async ({ midiId, trackId, events }: { midiId: string; trackId: number; events: any[] }) => {
+    insertEvents: async ({
+      midiId,
+      trackId,
+      events,
+      notes,
+      cc,
+      pitchbends,
+    }: {
+      midiId: string;
+      trackId: number;
+      events?: any[];
+      notes?: any[];
+      cc?: any[];
+      pitchbends?: any[];
+    }) => {
       const entry = getEntry(midiId);
       const track = getTrack(entry.midi, trackId);
-      for (const ev of events) {
+      const normalized: any[] = [];
+      if (events) normalized.push(...events);
+      if (notes) normalized.push(...notes.map((n) => ({ type: "note", ...n })));
+      if (cc) normalized.push(...cc.map((c) => ({ type: "cc", ...c })));
+      if (pitchbends) normalized.push(...pitchbends.map((p) => ({ type: "pitchbend", ...p })));
+      if (normalized.length === 0) {
+        throw new Error(
+          "insert_events requires at least one of: events, notes, cc, pitchbends"
+        );
+      }
+      for (const ev of normalized) {
         addEventToTrack(track, ev);
       }
       markDirty(entry);
