@@ -16,7 +16,7 @@ export const FilterSchema = z
   })
   .optional();
 
-const refineNoteEvent = (val: { midi?: number; noteNumber?: number; durationTicks?: number; duration?: number }, ctx: z.RefinementCtx) => {
+const refineNoteEvent = (val: { midi?: number; noteNumber?: number; ticks?: number; time?: number; durationTicks?: number; duration?: number; durationSeconds?: number }, ctx: z.RefinementCtx) => {
   if (val.midi === undefined && val.noteNumber === undefined) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -31,18 +31,30 @@ const refineNoteEvent = (val: { midi?: number; noteNumber?: number; durationTick
       path: ["noteNumber"],
     });
   }
-  if (val.durationTicks === undefined && val.duration === undefined) {
+  if (val.ticks === undefined && val.time === undefined) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "note event requires durationTicks or duration",
+      message: "note event requires ticks or time",
+      path: ["ticks"],
+    });
+  }
+  if (val.durationTicks === undefined && val.duration === undefined && val.durationSeconds === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "note event requires durationTicks or duration or durationSeconds",
       path: ["durationTicks"],
     });
   }
-  if (val.durationTicks !== undefined && val.duration !== undefined) {
+  const durationFields = [
+    val.durationTicks !== undefined ? "durationTicks" : null,
+    val.duration !== undefined ? "duration" : null,
+    val.durationSeconds !== undefined ? "durationSeconds" : null,
+  ].filter(Boolean);
+  if (durationFields.length > 1) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "note event requires only one of durationTicks or duration",
-      path: ["duration"],
+      message: "note event requires only one of durationTicks or duration or durationSeconds",
+      path: ["durationTicks"],
     });
   }
 };
@@ -51,9 +63,11 @@ export const NoteEventBaseSchema = z.object({
   type: z.literal("note"),
   midi: z.number().int().min(0).max(127).optional(),
   noteNumber: z.number().int().min(0).max(127).optional(),
-  ticks: z.number().int().min(0),
+  ticks: z.number().int().min(0).optional(),
+  time: z.number().min(0).optional(),
   durationTicks: z.number().int().min(1).optional(),
-  duration: z.number().int().min(1).optional(),
+  duration: z.number().min(0.000001).optional(),
+  durationSeconds: z.number().min(0.000001).optional(),
   velocity: z.number().min(0).max(1).optional(),
 });
 
@@ -122,10 +136,10 @@ export const InsertEventsSchema = z
   .object({
     midiId: z.string(),
     trackId: z.number().int().min(0),
-    events: z.array(EventSchema).optional(),
-    notes: z.array(NoteEventShortcutSchema).optional(),
-    cc: z.array(CcEventShortcutSchema).optional(),
-    pitchbends: z.array(PitchBendEventShortcutSchema).optional(),
+    events: z.array(EventSchema).min(1).optional(),
+    notes: z.array(NoteEventShortcutSchema).min(1).optional(),
+    cc: z.array(CcEventShortcutSchema).min(1).optional(),
+    pitchbends: z.array(PitchBendEventShortcutSchema).min(1).optional(),
   })
   .refine(
     (data) =>

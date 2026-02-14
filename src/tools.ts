@@ -245,11 +245,13 @@ export const registerMidiTools = (server: McpServer, repo: MidiRepository) => {
     "insert_notes",
     {
       title: "Insert notes",
-      description: "Insert note events into track. Signature: ({midiId, trackId, notes}) -> ok",
+      description:
+        "Insert note events into track. Signature: ({midiId, trackId, notes|notes_file}) -> ok",
       inputSchema: z.object({
         midiId: z.string(),
         trackId: z.number().int().min(0),
-        notes: z.array(NoteEventShortcutSchema),
+        notes: z.array(NoteEventShortcutSchema).min(1).optional(),
+        notes_file: z.string().optional(),
       }),
     },
     withErrorHandling(handlers.insertNotes)

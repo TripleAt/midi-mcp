@@ -35,6 +35,39 @@ const { Midi: MidiCtor } = midiPkg as unknown as {
   Midi: typeof import("@tonejs/midi").Midi;
 };
 
+const normalizeNoteForInsert = (midi: Midi, note: any) => {
+  const header = midi.header;
+  const normalized: any = { ...note };
+
+  if (normalized.ticks === undefined && normalized.time !== undefined) {
+    normalized.ticks = Math.max(0, Math.round(header.secondsToTicks(normalized.time)));
+  }
+
+  if (normalized.durationTicks === undefined) {
+    if (normalized.durationSeconds !== undefined) {
+      normalized.durationTicks = Math.max(
+        1,
+        Math.round(header.secondsToTicks(normalized.durationSeconds))
+      );
+    } else if (normalized.duration !== undefined) {
+      const treatAsSeconds =
+        normalized.time !== undefined ||
+        normalized.duration <= 10 ||
+        !Number.isInteger(normalized.duration);
+      if (treatAsSeconds) {
+        normalized.durationTicks = Math.max(
+          1,
+          Math.round(header.secondsToTicks(normalized.duration))
+        );
+      } else {
+        normalized.durationTicks = Math.max(1, Math.round(normalized.duration));
+      }
+    }
+  }
+
+  return normalized;
+};
+
 const addEventToTrack = (track: any, ev: any) => {
   if (ev.type === "note") {
     const midi = ev.midi ?? ev.noteNumber;
@@ -320,7 +353,8 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       const entry = getEntry(midiId);
       const events = toEventList(getTrack, entry.midi, trackId, range, filter);
       const start = offset ?? 0;
-      const pageSize = limit ?? 512;
+      const pageSize =
+        limit ?? (offset === undefined ? events.length : 512);
       const end = start + pageSize;
       return serialize({
         total: events.length,
@@ -368,13 +402,29 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       const track = getTrack(entry.midi, trackId);
       const normalized: any[] = [];
       if (events) normalized.push(...events);
-      if (notes) normalized.push(...notes.map((n) => ({ type: "note", ...n })));
+      if (notes) {
+        normalized.push(
+          ...notes.map((n) => ({
+            type: "note",
+            ...normalizeNoteForInsert(entry.midi, n),
+          }))
+        );
+      }
       if (cc) normalized.push(...cc.map((c) => ({ type: "cc", ...c })));
       if (pitchbends) normalized.push(...pitchbends.map((p) => ({ type: "pitchbend", ...p })));
       if (normalized.length === 0) {
         throw new Error(
           "insert_events requires at least one of: events, notes, cc, pitchbends"
         );
+      }
+      for (let i = 0; i < normalized.length; i++) {
+        const ev = normalized[i];
+        if (ev.type === "note") {
+          normalized[i] = {
+            ...ev,
+            ...normalizeNoteForInsert(entry.midi, ev),
+          };
+        }
       }
       for (const ev of normalized) {
         addEventToTrack(track, ev);
@@ -387,15 +437,31 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       midiId,
       trackId,
       notes,
+      notes_file,
     }: {
       midiId: string;
       trackId: number;
-      notes: any[];
+      notes?: any[];
+      notes_file?: string;
     }) => {
       const entry = getEntry(midiId);
+      let resolvedNotes: any[] = notes ?? [];
+      if (notes_file) {
+        const absPath = resolveProjectPath(entry.projectId, requirePath("notes_file", notes_file));
+        const raw = JSON.parse(await fs.readFile(absPath, "utf8"));
+        const fileNotes = Array.isArray(raw) ? raw : raw?.notes;
+        if (!Array.isArray(fileNotes)) {
+          throw new Error("notes_file must be a JSON array or an object with a notes array");
+        }
+        resolvedNotes = resolvedNotes.concat(fileNotes);
+      }
+      if (!resolvedNotes || resolvedNotes.length === 0) {
+        throw new Error("insert_notes requires at least one note");
+      }
       const track = getTrack(entry.midi, trackId);
-      for (const note of notes) {
-        addEventToTrack(track, { type: "note", ...note });
+      for (const note of resolvedNotes) {
+        const normalized = normalizeNoteForInsert(entry.midi, note);
+        addEventToTrack(track, { type: "note", ...normalized });
       }
       markDirty(entry);
       return ok("ok");
