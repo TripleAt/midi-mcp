@@ -24,14 +24,59 @@ npm run build
 node dist/index.js
 ```
 
-## Libraries used
-- @modelcontextprotocol/sdk (MCP server/transport)
-- @tonejs/midi (MIDI read/write + manipulation)
-- zod (input validation)
+## Quick start
+1. Start the server: `node dist/index.js`
+2. Use an MCP client to call tools like `open_midi`, `get_tracks`, `insert_notes`, `commit`
 
-## Notes
-- Paths are resolved relative to the registered project root.
-- The server exposes tools such as `open_midi`, `get_tracks`, `quantize`, and more.
+## Tools overview
+This server exposes MCP tools that operate on an in-memory MIDI session. Typical flow:
+1. `open_midi` → get `midiId`
+2. `get_tracks` → choose `trackId`
+3. Edit with `insert_notes`, `insert_events`, `quantize`, etc.
+4. `commit` or `save_as`
+
+## insert_notes
+Signature (TypeScript-ish):
+```ts
+insert_notes({
+  midiId: string,
+  trackId: number,
+  notes?: Array<{
+    midi?: number,
+    noteNumber?: number,
+    ticks?: number,
+    time?: number,
+    durationTicks?: number,
+    duration?: number,
+    durationSeconds?: number,
+    velocity?: number
+  }>,
+  notes_file?: string
+})
+```
+
+Rules:
+- `notes` または `notes_file` のどちらか必須（両方指定も可）
+- `midi` と `noteNumber` はどちらか一方のみ
+- `ticks` か `time` のどちらか必須
+- `durationTicks` / `duration` / `durationSeconds` のいずれか必須
+
+Notes on time fields:
+- `ticks` / `durationTicks` を推奨（明確・安全）
+- `time` / `durationSeconds` は秒指定として処理
+- `duration` は `time` がある場合や小数の場合は秒として解釈
+
+Large payloads:
+- 大量ノートは `notes_file` を推奨（MCPのメッセージサイズ制限回避）
+- `notes_file` はプロジェクトルートからの相対パス
+
+Small examples:
+```json
+{"midiId":"midi_123","trackId":0,"notes":[{"noteNumber":60,"ticks":0,"durationTicks":240}]}
+```
+```json
+{"midiId":"midi_123","trackId":0,"notes_file":"jingles/bass_30s.json"}
+```
 
 ## insert_events
 Signature (TypeScript-ish):
@@ -61,3 +106,18 @@ Small examples:
 ```json
 {"midiId":"midi_123","trackId":0,"notes":[{"midi":60,"ticks":0,"durationTicks":240}],"cc":[{"number":64,"value":1,"ticks":0}]}
 ```
+
+## Libraries used
+- @modelcontextprotocol/sdk (MCP server/transport)
+- @tonejs/midi (MIDI read/write + manipulation)
+- zod (input validation)
+
+## Notes
+- Paths are resolved relative to the registered project root.
+- The server exposes tools such as `open_midi`, `get_tracks`, `quantize`, and more.
+
+## License and usage notes
+- このリポジトリにはライセンスファイルは同梱していません（明示的な許諾がないため、実質的に All rights reserved 相当の扱いになります）。
+- もし公開・紹介する場合は、作者へのリンクを貼っていただけると嬉しいです: `https://x.com/OrotiYamatano`
+- 依存ライブラリにはそれぞれのライセンスが適用されます。配布・公開時は各ライブラリのライセンス条項を確認してください。
+- MIDIファイルや音源、楽曲の権利は別途管理されます。第三者のコンテンツを扱う場合は、権利と利用許諾に注意してください。
