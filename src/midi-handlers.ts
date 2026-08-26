@@ -739,7 +739,9 @@ export const createMidiHandlers = (repo: MidiRepository) => {
       }
       if (!data) throw new Error("composition or composition_file required");
       const midi = new MidiCtor();
-      if (data.ppq) (midi.header as any).ppq = data.ppq;
+      if (data.ppq !== undefined) {
+        midi.header.fromJSON({ ...midi.header.toJSON(), ppq: data.ppq });
+      }
       if (data.tempos) midi.header.tempos = data.tempos;
       if (data.timeSignatures) {
         midi.header.timeSignatures = data.timeSignatures.map((ts: any) => ({
