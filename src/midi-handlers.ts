@@ -738,6 +738,15 @@ export const createMidiHandlers = (repo: MidiRepository) => {
         data = JSON.parse(await fs.readFile(absPath, "utf8"));
       }
       if (!data) throw new Error("composition or composition_file required");
+      if (
+        data.ppq !== undefined &&
+        (typeof data.ppq !== "number" ||
+          !Number.isFinite(data.ppq) ||
+          !Number.isInteger(data.ppq) ||
+          data.ppq < 1)
+      ) {
+        throw new Error("ppq must be a finite integer greater than or equal to 1");
+      }
       const midi = new MidiCtor();
       if (data.ppq !== undefined) {
         midi.header.fromJSON({ ...midi.header.toJSON(), ppq: data.ppq });

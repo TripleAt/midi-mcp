@@ -17,5 +17,10 @@
     "@types/node": "^26.3.0",
     "typescript": "^7.0.2"
   },
+  "overrides": {
+    "@modelcontextprotocol/sdk": {
+      "@hono/node-server": "1.19.15"
+    }
+  },
   "private": true
 }
