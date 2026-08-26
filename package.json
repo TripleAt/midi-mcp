@@ -8,13 +8,13 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@tonejs/midi": "^2.0.28",
-    "zod": "^3.25.0"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/node": "^22.13.1",
-    "typescript": "^5.5.3"
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
   },
   "private": true
 }
