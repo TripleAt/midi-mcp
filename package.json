@@ -8,7 +8,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@tonejs/midi": "^2.0.28",
     "zod": "^3.25.0"
   },
