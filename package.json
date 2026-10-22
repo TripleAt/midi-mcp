@@ -9,7 +9,7 @@
     "test": "npm run build && node --test"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "@tonejs/midi": "^2.0.28",
     "zod": "^4.4.3"
   },
